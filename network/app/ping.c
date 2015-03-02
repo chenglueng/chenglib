@@ -242,7 +242,7 @@ ping_main(char *ip, int intv, int count)
 
 	// Beginning of geting options
 	// Setting count of ping
-	npackets = atoi(optarg);
+	npackets = count;
 	if (npackets <= 0) {
 		(void)fprintf(stderr,
 		    "ping: bad number of packets to transmit.\n");
