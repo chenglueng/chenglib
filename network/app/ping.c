@@ -197,9 +197,8 @@ static void tvsub(struct timeval *out, struct timeval *in);
 static void pr_icmph(struct icmphdr *icp);
 static void pr_retip(struct iphdr *ip);
 
-
 int
-main(int argc, char *argv[])
+ping_main(char *ip, int intv, int count)
 {
 	struct timeval timeout;
 	struct hostent *hp;
@@ -238,123 +237,29 @@ main(int argc, char *argv[])
 #ifdef SAFE_TO_DROP_ROOT
 	setuid(getuid());
 #endif
-
 	preload = 0;
 	datap = &outpack[8 + sizeof(struct timeval)];
-	while ((ch = getopt(argc, argv, "I:LRc:dfh:i:l:np:qrs:t:v")) != EOF)
-		switch(ch) {
-		case 'c':
-			npackets = atoi(optarg);
-			if (npackets <= 0) {
-				(void)fprintf(stderr,
-				    "ping: bad number of packets to transmit.\n");
-				exit(2);
-			}
-			break;
-		case 'd':
-			options |= F_SO_DEBUG;
-			break;
-		case 'f':
-			if (!am_i_root) {
-				(void)fprintf(stderr,
-				    "ping: %s\n", strerror(EPERM));
-				exit(2);
-			}
-			options |= F_FLOOD;
-			setbuf(stdout, NULL);
-			break;
-		case 'i':		/* wait between sending packets */
-			interval = atoi(optarg);
-			if (interval <= 0) {
-				(void)fprintf(stderr,
-				    "ping: bad timing interval.\n");
-				exit(2);
-			}
-			options |= F_INTERVAL;
-			break;
-		case 'l':
-			if (!am_i_root) {
-				(void)fprintf(stderr,
-				    "ping: %s\n", strerror(EPERM));
-				exit(2);
-			}
-			preload = atoi(optarg);
-			if (preload < 0) {
-				(void)fprintf(stderr,
-				    "ping: bad preload value.\n");
-				exit(2);
-			}
-			break;
-		case 'n':
-			options |= F_NUMERIC;
-			break;
-		case 'p':		/* fill buffer with user pattern */
-			options |= F_PINGFILLED;
-			fill(datap, optarg);
-			break;
-		case 'q':
-			options |= F_QUIET;
-			break;
-		case 'R':
-			options |= F_RROUTE;
-			break;
-		case 'r':
-			options |= F_SO_DONTROUTE;
-			break;
-		case 's':		/* size of packet to send */
-			datalen = atoi(optarg);
-			if (datalen > MAXPACKET) {
-				(void)fprintf(stderr,
-				    "ping: packet size too large.\n");
-				exit(2);
-			}
-			if (datalen <= 0) {
-				(void)fprintf(stderr,
-				    "ping: illegal packet size.\n");
-				exit(2);
-			}
-			break;
-		case 'v':
-			options |= F_VERBOSE;
-			break;
-		case 'L':
-			moptions |= MULTICAST_NOLOOP;
-			loop = 0;
-			break;
-		case 't':
-			moptions |= MULTICAST_TTL;
-			i = atoi(optarg);
-			if (i < 0 || i > 255) {
-				printf("ttl %u out of range\n", i);
-				exit(2);
-			}
-			ttl = i;
-			break;
-		case 'I':
-			moptions |= MULTICAST_IF;
-			{
-				int i1, i2, i3, i4;
-				char junk;
 
-				if (sscanf(optarg, "%u.%u.%u.%u%c",
-					   &i1, &i2, &i3, &i4, &junk) != 4) {
-					printf("bad interface address '%s'\n",
-					       optarg);
-					exit(2);
-				}
-				ifaddr.s_addr = (i1<<24)|(i2<<16)|(i3<<8)|i4;
-				ifaddr.s_addr = htonl(ifaddr.s_addr);
-			}
-			break;
-		default:
-			usage();
-		}
-	argc -= optind;
-	argv += optind;
-	
-	if (argc != 1)
-		usage();
-	target = *argv;
+	// Beginning of geting options
+	// Setting count of ping
+	npackets = atoi(optarg);
+	if (npackets <= 0) {
+		(void)fprintf(stderr,
+		    "ping: bad number of packets to transmit.\n");
+		exit(2);
+	}
+
+	// Setting interval of ping
+	interval = intv;
+	if (interval <= 0) {
+		(void)fprintf(stderr,
+		    "ping: bad timing interval.\n");
+		exit(2);
+	}
+	options |= F_INTERVAL;
+	// This is getting the target IP, so if I have it
+	// directly point it
+	target = ip;
 
 	memset(&whereto, 0, sizeof(struct sockaddr));
 	to = (struct sockaddr_in *)&whereto;
