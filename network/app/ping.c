@@ -79,6 +79,9 @@ char pkg[] = "netkit-base-0.10";
 #include <ctype.h>
 #include <errno.h>
 
+// CHENG
+#include "ping.h"
+
 /*
  * Note: on some systems dropping root makes the process dumpable or
  * traceable. In that case if you enable dropping root and someone
@@ -197,6 +200,33 @@ static void tvsub(struct timeval *out, struct timeval *in);
 static void pr_icmph(struct icmphdr *icp);
 static void pr_retip(struct iphdr *ip);
 
+int init_ping_report(struct ping_report *rpt)
+{
+	if(!rpt)
+	{
+		return -1;
+	}
+	memset(rpt, 0, sizeof(struct ping_report));
+	return 0;
+}
+int generate_ping_report(struct ping_report *rpt, int tries, int success)
+{
+	if(!rpt || tries < 0 || success < 0 || success > tries)
+	{
+		return -1; // input error
+	}
+	rpt->tries = tries;
+	rpt->success = success;
+	rpt->failed = tries - success;
+}
+int set_ping_report_fail_reason(struct ping_report *rpt, int reason)
+{
+	if(!rpt || reason < 0)
+	{
+		return -1;
+	}
+	rpt->lastFailReason = reason;
+}
 int
 ping_main(char *ip, int intv, int count)
 {
