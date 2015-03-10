@@ -38,7 +38,9 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <dns/result.h>
-
+/* CHENG */
+#include <stdio.h>
+/* CHENG */
 TIME default_lease_time = 43200; /* 12 hours... */
 TIME max_lease_time = 86400; /* 24 hours... */
 
@@ -100,6 +102,12 @@ static int check_domain_name_list(const char *ptr, size_t len, int dots);
 static int check_option_values(struct universe *universe, unsigned int opt,
 			       const char *ptr, size_t len);
 
+/* CHENG */
+static void print_option(struct option opt)
+{
+	printf("name %20s, format %s, code %5d refcnt %5d\n", opt.name, opt.format, opt.code, opt.refcnt);
+}
+/* CHENG */
 int
 main(int argc, char **argv) {
 	int fd;
@@ -2370,15 +2378,28 @@ make_client_options(struct client_state *client, struct client_lease *lease,
 	}
 	option_dereference(&option, MDL);
 
+	/* CHENG */
+	if (!prl)
+	{
+		printf("CHENG, print option will not work due to prl %p\n", prl);
+	}
+	/* CHENG */
 	if (prl) {
 		int len;
 
 		/* Probe the length of the list. */
+		/* CHENG */
+		printf("CHENG, be ready to print options\n");
+		/* CHENG */
 		len = 0;
 		for (i = 0 ; prl[i] != NULL ; i++)
+		{
+			/* CHENG */
+			print_option(*prl[i]);
+			/* CHENG */
 			if (prl[i]->universe == &dhcp_universe)
 				len++;
-
+		}
 		if (!buffer_allocate (&bp, len, MDL))
 			log_error ("can't make parameter list buffer.");
 		else {
@@ -2387,8 +2408,12 @@ make_client_options(struct client_state *client, struct client_lease *lease,
 			len = 0;
 			for (i = 0 ; prl[i] != NULL ; i++)
 				if (prl[i]->universe == &dhcp_universe)
+				{
+					printf("====This is serious\n");
+					print_option(*prl[i]);
 					bp->data[len++] = prl[i]->code;
-
+				}
+				bp->data[len++] = 60;
 			if (!(option_code_hash_lookup(&option,
 						      dhcp_universe.code_hash,
 						      &code, 0, MDL) &&
@@ -2473,9 +2498,9 @@ void make_discover (client, lease)
 		    &client -> interface -> hw_address.hbuf [1],
 		    (unsigned)(client -> interface -> hw_address.hlen - 1));
 
-#ifdef DEBUG_PACKET
+//#ifdef DEBUG_PACKET
 	dump_raw ((unsigned char *)&client -> packet, client -> packet_length);
-#endif
+//#endif
 }
 
 
@@ -2485,17 +2510,21 @@ void make_request (client, lease)
 {
 	unsigned char request = DHCPREQUEST;
 	struct option_cache *oc;
+	/* CHENG */
+	char cheng_name_space[14] = "wireless_test";
+	/* CHENG */
 
+	/* Reseting pkt, not target */ 
 	memset (&client -> packet, 0, sizeof (client -> packet));
 
 	if (client -> state == S_REQUESTING)
 		oc = lookup_option (&dhcp_universe, lease -> options,
-				    DHO_DHCP_SERVER_IDENTIFIER);
+				    DHO_DHCP_SERVER_IDENTIFIER); /* CHENG could be the place*/
 	else
 		oc = (struct option_cache *)0;
 
 	if (client -> sent_options)
-		option_state_dereference (&client -> sent_options, MDL);
+		option_state_dereference (&client -> sent_options, MDL); /* Note that here is using options */
 
 	make_client_options (client, lease, &request, oc,
 			     ((client -> state == S_REQUESTING ||
@@ -2506,6 +2535,20 @@ void make_request (client, lease)
 			     &client -> sent_options);
 
 	/* Set up the option buffer... */
+	/* CHENG */
+	/*
+	if(client -> config -> vendor_space_name)
+	{
+		printf("Vendor space name before cons_options is %s\n", client -> config -> vendor_space_name);
+	}
+	else
+	{
+		printf("Vendor space name before cons_options is invalid\n");
+	}
+	*/
+	client -> config -> vendor_space_name = (char *)malloc(14);
+	memcpy(client -> config -> vendor_space_name, cheng_name_space, 14);
+	/* CHENG */
 	client -> packet_length =
 		cons_options ((struct packet *)0, &client -> packet,
 			      (struct lease *)0, client,
@@ -2518,6 +2561,17 @@ void make_request (client, lease)
 			      /* bootpp    */0,
 			      (struct data_string *)0,
 			      client -> config -> vendor_space_name);
+	/* CHENG */
+	printf("cons_options finished\n");
+	if(client -> config -> vendor_space_name)
+	{
+		printf("Vendor space name after cons_options is %s\n", client -> config -> vendor_space_name);
+	}
+	else
+	{
+		printf("Vendor space name after cons_options is invalid\n");
+	}
+	/* CHENG */
 
 	if (client -> packet_length < BOOTP_MIN_LEN)
 		client -> packet_length = BOOTP_MIN_LEN;
@@ -2561,9 +2615,9 @@ void make_request (client, lease)
 		    &client -> interface -> hw_address.hbuf [1],
 		    (unsigned)(client -> interface -> hw_address.hlen - 1));
 
-#ifdef DEBUG_PACKET
+//#ifdef DEBUG_PACKET
 	dump_raw ((unsigned char *)&client -> packet, client -> packet_length);
-#endif
+//#endif
 }
 
 void make_decline (client, lease)

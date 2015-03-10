@@ -546,6 +546,7 @@ cons_options(struct packet *inpacket, struct dhcp_packet *outpacket,
 	 * alternative, take the one in the packet.
 	 */
 
+	printf("Calling cons_options\n");
 	if (inpacket &&
 	    (op = lookup_option(&dhcp_universe, inpacket->options,
 				DHO_DHCP_MAX_MESSAGE_SIZE)) &&
@@ -598,6 +599,7 @@ cons_options(struct packet *inpacket, struct dhcp_packet *outpacket,
 	 * to copy back in later, and make space in the main buffer
 	 * to accommodate them
 	 */
+	printf("Going to store options\n");
 	if (client_state == NULL) {
 		priority_list[0] = DHO_DHCP_AGENT_OPTIONS;
 		priority_len = 1;
@@ -612,7 +614,7 @@ cons_options(struct packet *inpacket, struct dhcp_packet *outpacket,
 		if (mb_size > DHCP_MAX_OPTION_LEN)
 			mb_size = DHCP_MAX_OPTION_LEN;
 	}
-
+	printf("Stored options\n");
 	/*
 	 * Set offsets for buffer data to be copied into filename
 	 * and servername fields 
@@ -783,11 +785,13 @@ cons_options(struct packet *inpacket, struct dhcp_packet *outpacket,
 	index += 4;
 
 	/* Copy the options into the big buffer... */
+	printf("Last store option coming\n");
 	option_size = store_options(&overload_used, buffer, index, mb_max,
 				    inpacket, lease, client_state,
 				    in_options, cfg_options, scope,
 				    priority_list, priority_len,
 				    of1, of2, terminate, vuname);
+	printf("Last store option finished\n");
 
 	/* If store_options() failed */
 	if (option_size == 0)
@@ -828,7 +832,7 @@ cons_options(struct packet *inpacket, struct dhcp_packet *outpacket,
 	/* Tack a DHO_END option onto the packet if we need to. */
 	if (index < mb_size)
 		buffer[index++] = DHO_END;
-
+	printf("Copying DHO_END %d\n", DHO_END);
 	/* Copy main buffer into the options buffer of the packet */
 	memcpy(outpacket->options, buffer, index);
 
@@ -1133,6 +1137,7 @@ store_options(int *ocount,
 	 * reduce them by the current buffer index, and advance the
 	 * buffer pointer to where we're going to start writing.
 	 */
+	printf("Beginning of store_options\n");
 	buffer = &buffer[index];
 	buflen -= index;
 	if (first_cutoff)
